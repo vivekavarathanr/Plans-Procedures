@@ -1,19 +1,34 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import ReactSelect from "react-select";
 
-const PlanProcedureItem = ({ procedure, users }) => {
-    const [selectedUsers, setSelectedUsers] = useState(null);
+const PlanProcedureItem = ({planProcedure, users, onAssignedUsersChange, onRemoveAllUsers }) => {
 
-    const handleAssignUserToProcedure = (e) => {
-        setSelectedUsers(e);
-        // TODO: Remove console.log and add missing logic
-        console.log(e);
+    const selectedUsers = useMemo(
+        () => (planProcedure.assignedUsers || []).map((u) => ({
+            label: u.user?.name,
+            value: u.userId,
+        })),
+        [planProcedure.assignedUsers]
+    );
+
+    const handleAssignUsersToProcedure = async (selectedOptions) => {
+        const nextUsers = selectedOptions || [];
+        await onAssignedUsersChange(planProcedure, nextUsers);
     };
 
     return (
         <div className="py-2">
-            <div>
-                {procedure.procedureTitle}
+            <div className="d-flex justify-content-between align-items-center">
+                <div>
+                    {planProcedure.procedure.procedureTitle}
+                </div>
+                <button
+                    className="btn btn-sm btn-outline-danger ms-2"
+                    disabled={!selectedUsers.length}
+                    onClick={() => onRemoveAllUsers(planProcedure)}
+                >
+                    X
+                </button>
             </div>
 
             <ReactSelect
@@ -22,7 +37,7 @@ const PlanProcedureItem = ({ procedure, users }) => {
                 isMulti={true}
                 options={users}
                 value={selectedUsers}
-                onChange={(e) => handleAssignUserToProcedure(e)}
+                onChange={handleAssignUsersToProcedure}
             />
         </div>
     );

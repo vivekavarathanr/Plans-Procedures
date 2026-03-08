@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   addProcedureToPlan,
+  assignUserToPlanProcedure,
   getPlanProcedures,
   getProcedures,
   getUsers,
+  removeAllUsersFromPlanProcedure,
+  removeUserFromPlanProcedure,
 } from "../../api/api";
 import Layout from '../Layout/Layout';
 import ProcedureItem from "./ProcedureItem/ProcedureItem";
@@ -16,18 +19,29 @@ const Plan = () => {
   const [planProcedures, setPlanProcedures] = useState([]);
   const [users, setUsers] = useState([]);
 
+  const userOptions = useMemo(
+    () => users.map((u) => ({ label: u.name, value: u.userId })),
+    [users]
+  );
+
+  const usersById = useMemo(
+    () => users.reduce((acc, user) => ({ ...acc, [user.userId]: user }), {}),
+    [users]
+  );
+
   useEffect(() => {
     (async () => {
-      var procedures = await getProcedures();
-      var planProcedures = await getPlanProcedures(id);
       var users = await getUsers();
 
       var userOptions = [];
       users.map((u) => userOptions.push({ label: u.name, value: u.userId }));
+      var proceduresData = await getProcedures();
+      var planProceduresData = await getPlanProcedures(id);
+      var usersData = await getUsers();
 
-      setUsers(userOptions);
-      setProcedures(procedures);
-      setPlanProcedures(planProcedures);
+      setUsers(usersData);
+      setProcedures(proceduresData);
+      setPlanProcedures(planProceduresData);
     })();
   }, [id]);
 
@@ -46,9 +60,63 @@ const Plan = () => {
             procedureId: procedure.procedureId,
             procedureTitle: procedure.procedureTitle,
           },
+          assignedUsers: [],
         },
       ];
     });
+  };
+
+  const handleAssignedUsersChange = async (planProcedure, nextSelectedUsers) => {
+    const currentAssignedUsers = planProcedure.assignedUsers || [];
+
+    const currentIds = currentAssignedUsers.map((u) => u.userId);
+    const nextIds = nextSelectedUsers.map((u) => u.value);
+
+    const addedIds = nextIds.filter((userId) => !currentIds.includes(userId));
+    const removedIds = currentIds.filter((userId) => !nextIds.includes(userId));
+
+    if (addedIds.length > 0) {
+      await Promise.all(
+        addedIds.map((userId) => assignUserToPlanProcedure(planProcedure.planId, planProcedure.procedureId, userId))
+      );
+    }
+
+    if (removedIds.length > 0) {
+      await Promise.all(
+        removedIds.map((userId) => removeUserFromPlanProcedure(planProcedure.planId, planProcedure.procedureId, userId))
+      );
+    }
+
+    setPlanProcedures((prevState) => prevState.map((pp) => {
+      if (pp.planId !== planProcedure.planId || pp.procedureId !== planProcedure.procedureId) {
+        return pp;
+      }
+
+      return {
+        ...pp,
+        assignedUsers: nextIds.map((userId) => ({
+          planId: pp.planId,
+          procedureId: pp.procedureId,
+          userId,
+          user: usersById[userId],
+        })),
+      };
+    }));
+  };
+
+  const handleRemoveAllUsers = async (planProcedure) => {
+    await removeAllUsersFromPlanProcedure(planProcedure.planId, planProcedure.procedureId);
+
+    setPlanProcedures((prevState) => prevState.map((pp) => {
+      if (pp.planId !== planProcedure.planId || pp.procedureId !== planProcedure.procedureId) {
+        return pp;
+      }
+
+      return {
+        ...pp,
+        assignedUsers: [],
+      };
+    }));
   };
 
   return (
@@ -83,7 +151,10 @@ const Plan = () => {
                         <PlanProcedureItem
                           key={p.procedure.procedureId}
                           procedure={p.procedure}
-                          users={users}
+                          planProcedure={p}
+                          users={userOptions}
+                          onAssignedUsersChange={handleAssignedUsersChange}
+                          onRemoveAllUsers={handleRemoveAllUsers}
                         />
                       ))}
                     </div>
