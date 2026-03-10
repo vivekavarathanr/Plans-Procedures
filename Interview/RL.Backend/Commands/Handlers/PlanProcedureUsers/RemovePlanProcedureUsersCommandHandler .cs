@@ -31,7 +31,7 @@ namespace RL.Backend.Commands.Handlers.PlanProcedureUsers
                     x => x.PlanId == request.PlanId && x.ProcedureId == request.ProcedureId && x.UserId == request.UserId, cancellationToken);
 
                 if (record is null)
-                    return ApiResponse<Unit>.Succeed(new Unit());
+                    return ApiResponse<Unit>.Fail(new NotFoundException("No record is required to remove"));
 
                 _context.PlanProcedureUsers.Remove(record);
                 await _context.SaveChangesAsync(cancellationToken);

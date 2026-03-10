@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import ReactSelect from "react-select";
 
-const PlanProcedureItem = ({planProcedure, users, onAssignedUsersChange, onRemoveAllUsers }) => {
+const PlanProcedureItem = ({planProcedure, users, onAssignedUsersChange}) => {
 
     const selectedUsers = useMemo(
         () => (planProcedure.assignedUsers || []).map((u) => ({
@@ -22,13 +22,6 @@ const PlanProcedureItem = ({planProcedure, users, onAssignedUsersChange, onRemov
                 <div>
                     {planProcedure.procedure.procedureTitle}
                 </div>
-                <button
-                    className="btn btn-sm btn-outline-danger ms-2"
-                    disabled={!selectedUsers.length}
-                    onClick={() => onRemoveAllUsers(planProcedure)}
-                >
-                    X
-                </button>
             </div>
 
             <ReactSelect

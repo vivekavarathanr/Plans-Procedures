@@ -29,7 +29,7 @@ namespace RL.Backend.Commands.Handlers.PlanProcedureUsers
                     .ToListAsync(cancellationToken);
 
                 if (!records.Any())
-                    return ApiResponse<Unit>.Succeed(new Unit());
+                    return ApiResponse<Unit>.Fail(new NotFoundException("No record is required to remove"));
 
                 _context.PlanProcedureUsers.RemoveRange(records);
                 await _context.SaveChangesAsync(cancellationToken);

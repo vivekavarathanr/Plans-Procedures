@@ -75,17 +75,22 @@ const Plan = () => {
     const addedIds = nextIds.filter((userId) => !currentIds.includes(userId));
     const removedIds = currentIds.filter((userId) => !nextIds.includes(userId));
 
-    if (addedIds.length > 0) {
-      await Promise.all(
-        addedIds.map((userId) => assignUserToPlanProcedure(planProcedure.planId, planProcedure.procedureId, userId))
-      );
+    if (nextIds.length === 0) {
+      await removeAllUsersFromPlanProcedure(planProcedure.planId, planProcedure.procedureId);
     }
+    else{
+      if (addedIds.length > 0) {
+        await Promise.all(
+          addedIds.map((userId) => assignUserToPlanProcedure(planProcedure.planId, planProcedure.procedureId, userId))
+        );
+      }
 
-    if (removedIds.length > 0) {
-      await Promise.all(
-        removedIds.map((userId) => removeUserFromPlanProcedure(planProcedure.planId, planProcedure.procedureId, userId))
-      );
-    }
+      if (removedIds.length > 0) {
+        await Promise.all(
+          removedIds.map((userId) => removeUserFromPlanProcedure(planProcedure.planId, planProcedure.procedureId, userId))
+        );
+      }
+        }
 
     setPlanProcedures((prevState) => prevState.map((pp) => {
       if (pp.planId !== planProcedure.planId || pp.procedureId !== planProcedure.procedureId) {
@@ -100,21 +105,6 @@ const Plan = () => {
           userId,
           user: usersById[userId],
         })),
-      };
-    }));
-  };
-
-  const handleRemoveAllUsers = async (planProcedure) => {
-    await removeAllUsersFromPlanProcedure(planProcedure.planId, planProcedure.procedureId);
-
-    setPlanProcedures((prevState) => prevState.map((pp) => {
-      if (pp.planId !== planProcedure.planId || pp.procedureId !== planProcedure.procedureId) {
-        return pp;
-      }
-
-      return {
-        ...pp,
-        assignedUsers: [],
       };
     }));
   };
@@ -154,7 +144,6 @@ const Plan = () => {
                           planProcedure={p}
                           users={userOptions}
                           onAssignedUsersChange={handleAssignedUsersChange}
-                          onRemoveAllUsers={handleRemoveAllUsers}
                         />
                       ))}
                     </div>
